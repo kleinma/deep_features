@@ -101,10 +101,12 @@ class ModelBase():
     desired_output_layers : List[int or str]
       List of indices or names of layers to include in network output
 
-    Returns
-    -------
-    Tuple[List[tf.keras.backend.function], List[str]]
-      Functions to compute the desired output layers and those layers' names
+    Data Attributes Modified
+    ------------------------
+    output_functors : List[tf.keras.backend.function]
+      Functions to compute the output of the desired network layers
+    output_layer_names : List[str]
+      The names of the desired output network layers
     """
 
     all_layer_names = [layer.name for layer in self.fcn.layers]
@@ -141,7 +143,7 @@ class ModelBase():
 
     functors = [tf.keras.backend.function([fcn_input], [out]) for out in outputs]
 
-    # Set member variables
+    # Set data attributes
     self.output_functors = functors
     self.output_layer_names = layer_names
 
