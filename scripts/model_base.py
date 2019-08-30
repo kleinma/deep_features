@@ -147,18 +147,6 @@ class ModelBase():
     self.output_functors = functors
     self.output_layer_names = layer_names
 
-  def get_desired_output_layers(self):
-    """
-    Get the indices of the output layers we want
-
-    Returns
-    -------
-    List of integers or strings (or None)
-      Indices or names of layers we want in the output. Use None if want all.
-
-    """
-    return self.desired_output_layers
-
   def fcn_pass(self, input_data):
     """
     Get the names and outputs of each layer of the fully convolutional network
