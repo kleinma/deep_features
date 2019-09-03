@@ -1,6 +1,6 @@
 import tensorflow as tf
 import os
-from collections import OrderedDict
+from layer_output import LayerOutput
 
 class ModelBase():
   """
@@ -9,10 +9,10 @@ class ModelBase():
   The model class specifies the fully convolutional and classifier networks. It
   also speficies where checkpoints are saved and loaded from. Finally, it
   defines a function `fcn_pass(input_data)` which returns the output of the
-  fully convultional network (fcn), given the input data. This consists of an
-  ordered dictionary with the keys being the layer name and the value being a
-  numpy array containing the network output values. This is what is sent to the
-  feature detector and feature descriptor.
+  fully convultional network (fcn), given the input data. This consists of a
+  dictionary of namedtuples whose entries are the layer's names and their
+  network output values. This is what is sent to the feature detector and
+  feature descriptor.
 
   Attributes
   ----------
@@ -158,18 +158,18 @@ class ModelBase():
 
     Returns
     -------
-    collections.OrderedDict (key: str, value: np.array)
-      layer names (keys) matched with layer outputs (values)
+    LayerOutput (layer_name: str, output_values: np.nparray)
+      layer names matched with layer outputs
     """
     # TODO - allow the following sizes of input_data:
     # size = 2: single channel image (HW format)
     # size = 3: N channel image (HWC format)
     # size = 4: Batch of M N channel images (BHWC format)
     layer_outs = [func([input_data]) for func in self.output_functors]
-    layer_dict = OrderedDict()
+    network_output = []
     for name, output in zip(self.output_layer_names, layer_outs):
-      layer_dict[name] = output[0]
-    return layer_dict
+      network_output.append(LayerOutput(layer_name=name, output_values=output[0]))
+    return network_output
 
   def save_best_weights(self):
     """

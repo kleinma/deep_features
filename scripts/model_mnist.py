@@ -24,8 +24,7 @@ if __name__ == "__main__":
 
   import numpy as np
   image = np.random.rand(1,50,50,1)
-  output_dict = model.fcn_pass(image)
-  # print(output_dict)
+  network_output = model.fcn_pass(image)
 
-  for key in output_dict.keys():
-    print('key = {}, value\'s shape = {} '.format(key, output_dict[key].shape))
+  for name, output in network_output:
+    print('layer_name = {}, output_value\'s shape = {} '.format(name, output.shape))
