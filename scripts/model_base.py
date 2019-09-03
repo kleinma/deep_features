@@ -166,9 +166,9 @@ class ModelBase():
     # size = 3: N channel image (HWC format)
     # size = 4: Batch of M N channel images (BHWC format)
     layer_outs = [func([input_data]) for func in self.output_functors]
-    network_output = []
-    for name, output in zip(self.output_layer_names, layer_outs):
-      network_output.append(LayerOutput(layer_name=name, output_values=output[0]))
+    network_output = [LayerOutput(layer_name=name, output_values=output[0])
+                      for name, output
+                      in zip(self.output_layer_names, layer_outs)]
     return network_output
 
   def save_best_weights(self):
