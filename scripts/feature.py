@@ -51,7 +51,7 @@ class DescriptorType(Enum):
   RAW = 1
   MAX = 2
 
-Descriptor = namedtuple('Descriptor', ['data', 'type'])
+Descriptor = namedtuple('Descriptor', ['data', 'descriptor_type'])
 
 # Feature is made up of a location, a descriptor, and an enum of the
 # descriptor type, which can be used to determine which algorithm was used to
@@ -66,7 +66,7 @@ if __name__ == "__main__":
                                                          height=56,
                                                          width=38,
                                                          channel=94))
-  descriptor = Descriptor(data=99, type=DescriptorType.RAW)
+  descriptor = Descriptor(data=99, descriptor_type=DescriptorType.RAW)
   feature = Feature(location=location, descriptor=descriptor)
 
   print(feature)
