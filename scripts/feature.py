@@ -49,6 +49,7 @@ FeatureLocation = namedtuple('FeatureLocation', ['image_loc', 'network_loc'])
 # used to create the descriptor and which to use to match features.
 class DescriptorType(Enum):
   RAW = 1
+  MAX = 2
 
 Descriptor = namedtuple('Descriptor', ['data', 'type'])
 
