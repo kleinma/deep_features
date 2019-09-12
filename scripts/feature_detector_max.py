@@ -17,7 +17,7 @@ class FeatureDetectorMax(FeatureDetectorBase):
         all_feature_locations.extend(feature_locations)
         all_features.extend(features)
 
-    return all_features, all_features
+    return all_feature_locations, all_features
 
   def find_max_subpixels_in_feature_map(self, fmap, layer_name=None, channel=None):
     y_max = fmap.shape[0]
