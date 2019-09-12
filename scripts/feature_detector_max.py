@@ -1,6 +1,7 @@
 from feature_detector_base import FeatureDetectorBase
 from layer_output import LayerOutput
 from feature import NetworkLocation, FeatureLocation, DescriptorType, Descriptor, FeatureLocation, Feature
+import numpy as np
 
 class FeatureDetectorMax(FeatureDetectorBase):
   '''
@@ -97,13 +98,11 @@ if __name__ == "__main__":
   # Try with mnist model
   from model_mnist import ModelMnist
   model = ModelMnist()
-  import numpy as np
   image = np.random.rand(1,50,50,1)
   network_output = model.fcn_pass(image)
   fdm = FeatureDetectorMax()
   feature_locations, features = fdm.detect(network_output)
   data = [f.descriptor.data for f in features]
-
   import matplotlib.pyplot as plt
 
   plt.hist(data, int(len(data)/10.))
