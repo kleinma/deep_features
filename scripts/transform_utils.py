@@ -1,0 +1,64 @@
+import numpy as np
+from collections import Sequence
+from numbers import Number
+
+def transform_image(img, tf):
+  """
+  Transform the image using the given transform
+
+  Parameters
+  ----------
+  img : np.ndarray
+    Image to be transformed
+  tf : np.ndarray or Sequence of Numbers
+    2x3 or 3x3 affine transform matrix
+
+  Returns
+  ------
+  np.ndarray
+    Transformed image
+  """
+  return img
+
+def transform_feature_locations(feature_locs, tf):
+  """
+  Transform the feature locations using the given transform
+
+  Parameters
+  ----------
+  img : np.ndarray
+    Image to be transformed
+  tf : np.ndarray or Sequence of Numbers
+    2x3 or 3x3 affine transform matrix
+
+  Returns
+  -------
+  np.ndarray
+    Transformed image
+  """
+  if tf.size == 6:
+    tf = np.append(np.array(tf), (0,0,1)).reshape(3,3)
+  elif tf.size == 9:
+    tf = np.array(tf).reshape(3,3)
+  else:
+    raise Exception('tf must be of size 6 or 9')
+
+  transformed_feature_locs = []
+  for feature_loc in feature_locs:
+    _, h, w, _ = feature_loc.network_loc
+    x = np.array(((w), (h), (1)))
+    x_prime = np.matmul(tf,x)
+    network_loc = feature_loc.network_loc._replace(width=x_prime[0], height=x_prime[1])
+    transformed_feature_locs.append(feature_loc._replace(network_loc=network_loc))
+  return transformed_feature_locs
+
+def is_affine_transform(tf):
+  """ An affine transform should contain six or 9 numeric elements """
+  if isinstance(tf, np.ndarray): # If it is a numpy array
+    if tf.size == 6 or tf.size == 9:
+      return np.issubdtype(tf.dtype, np.number)
+  elif isinstance(tf, Sequence): # If it is a Sequence
+    if len(tf) == 6 or len(tf) == 9:
+      return all(isinstance(el, Number) for el in tf)
+  else: # If it is anything else
+    return False
