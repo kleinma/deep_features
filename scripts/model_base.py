@@ -1,4 +1,5 @@
 import tensorflow as tf
+import numpy as np
 import os
 from layer_output import LayerOutput
 
@@ -165,11 +166,59 @@ class ModelBase():
     # size = 2: single channel image (HW format)
     # size = 3: N channel image (HWC format)
     # size = 4: Batch of M N channel images (BHWC format)
+    input_data = self.preprocess_data(input_data)
+    input_data = self.expand_to_bhwc(input_data)
     layer_outs = [func([input_data]) for func in self.output_functors]
     network_output = [LayerOutput(layer_name=name, output_values=output[0])
                       for name, output
                       in zip(self.output_layer_names, layer_outs)]
     return network_output
+
+  def expand_to_bhwc(self, input_data):
+    """
+    Add dimensions to input array so that it is in BHWC format.
+
+    The input to a model should be in B(atch) H(eight) W(idth) C(hannel)
+    format. However, many images are either in HWC or even just HW format. This
+    function naively checks the length of the shape. If it has two dimensions,
+    expand dimensions on both side to add B and C. If it has three dimensions,
+    expand just the B dimension.
+
+    Parameters
+    ----------
+    input_data : np.ndarray
+      The input image
+
+    Returns
+    -------
+    np.ndarray
+      The expanded input image in BHWC format
+    """
+    n_dims = len(input_data.shape)
+    if n_dims == 4:
+      return input_data
+    elif n_dims == 3:
+      return np.expand_dims(input_data, axis=0)
+    elif N_dims == 2:
+      return np.expand_dims(np.expand_dims(input_data, axis=0), axis=-1)
+    else:
+      raise Exception("expand_to_bhwc: Input is not 2, 3, or 4 dimensions")
+
+  def preprocess_data(self, input_data):
+    """
+    Override to create custom data preprocessing step (default returns input).
+
+    Parameters
+    ----------
+    input_data : np.ndarray
+      The input image
+
+    Returns
+    -------
+    np.ndarray
+      The preprocessed input image (default returns input)
+    """
+    return input_data
 
   def save_best_weights(self):
     """
