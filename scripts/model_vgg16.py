@@ -9,7 +9,7 @@ class ModelVGG16(ModelBase):
 
   def init_desired_output_layers(self):
     """ Grab the last convolutional layer from each block """
-    return [2, 5, 9, 13, 17, 19]
+    return ['block5_conv3']
 
   def init_checkpoint_dir(self):
     return './checkpoints/vgg16'
