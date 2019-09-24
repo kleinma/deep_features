@@ -1,4 +1,5 @@
 import numpy as np
+import cv2
 from collections import Sequence
 from numbers import Number
 
@@ -17,8 +18,15 @@ def transform_image(img, tf):
   ------
   np.ndarray
     Transformed image
+
+  Notes
+  -----
+  Uses warpAffine from cv2 (link to documentation below).
+  https://docs.opencv.org/2.4/modules/imgproc/doc/geometric_transformations.html#warpaffine
   """
-  return img
+  tf = tf.flatten()[0:6].reshape(2,3).astype(np.float64)
+  print('tf =\n{}'.format(tf))
+  return cv2.warpAffine(src=img, M=tf, dsize=(img.shape[1], img.shape[0]), flags=cv2.INTER_CUBIC)
 
 def transform_feature_locations(feature_locs, tf):
   """
