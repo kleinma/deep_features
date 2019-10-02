@@ -64,6 +64,27 @@ def transform_feature_locations(feature_locs, tf):
     transformed_feature_locs.append(feature_loc._replace(network_loc=network_loc))
   return transformed_feature_locs
 
+def transform_points(points, tf):
+  """
+  Transform an array on 2D points given a 3x3 transform matrix
+
+  Parameters
+  ----------
+  points : np.ndarray
+    2xN array of points
+  tf : np.ndarray
+    3x3 tranformation matrix
+
+  Returns
+  -------
+  np.ndarray
+    2xN array of transformed points
+  """
+  points_exp = np.ones((points.shape[0]+1,points.shape[1]))
+  points_exp[:-1,:] = points
+  points_tf = tf @ points_exp
+  return points_tf[:-1,:]
+
 def is_affine_transform(tf):
   """ An affine transform should contain six or 9 numeric elements """
   if isinstance(tf, np.ndarray): # If it is a numpy array
