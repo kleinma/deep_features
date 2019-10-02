@@ -94,7 +94,7 @@ class TestDetectorAffine():
       A list of the feature locations
     """
     network_output = self.model.fcn_pass(img)
-    feature_locs, _ = self.detector.detect(network_output)
+    feature_locs = self.detector.detect(network_output)
     print('len(feature_locs) = {}'.format(len(feature_locs)))
     return feature_locs, network_output
 

@@ -39,8 +39,10 @@ list of feature locations and network output goes into feature descriptor - list
 ImageLocation = namedtuple('ImageLocation', ['x','y'])
 # NetworkLoc(ation) is the neuron in the network where the feature was found
 NetworkLocation = namedtuple('NetworkLocation', ['layer_name', 'height', 'width', 'channel'])
+# PixelValue stores the value of the pixel as well as any subpixel value calculated
+PixelValue = namedtuple('PixelValue', ['actual_pixel_value', 'sub_pixel_value'])
 # FeatureLoc(cation) is the combined set of image and network locations
-FeatureLocation = namedtuple('FeatureLocation', ['image_loc', 'network_loc'])
+FeatureLocation = namedtuple('FeatureLocation', ['image_loc', 'network_loc', 'pixel_value'])
 
 # Contained in each feature will be a descriptor and a descriptor type. The
 # descriptor will depend on the descriptor type and can be all sorts of data
@@ -49,7 +51,6 @@ FeatureLocation = namedtuple('FeatureLocation', ['image_loc', 'network_loc'])
 # used to create the descriptor and which to use to match features.
 class DescriptorType(Enum):
   RAW = 1
-  MAX = 2
 
 Descriptor = namedtuple('Descriptor', ['data', 'descriptor_type'])
 

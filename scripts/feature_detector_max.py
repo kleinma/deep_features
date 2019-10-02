@@ -1,6 +1,6 @@
 from feature_detector_base import FeatureDetectorBase
 from layer_output import LayerOutput
-from feature import NetworkLocation, FeatureLocation, DescriptorType, Descriptor, FeatureLocation, Feature
+from feature import ImageLocation, NetworkLocation, PixelValue, FeatureLocation
 import numpy as np
 
 class FeatureDetectorMax(FeatureDetectorBase):
@@ -9,23 +9,19 @@ class FeatureDetectorMax(FeatureDetectorBase):
   '''
   def detect(self, network_output):
     all_feature_locations = []
-    all_features = []
     for name, out in network_output:
       for i in range(out.shape[-1]): #Iterate over the channels
-        feature_locations, features = self.find_max_subpixels_in_feature_map(np.squeeze(out[...,i],0), name, i)
+        feature_locations = self.find_max_subpixels_in_feature_map(np.squeeze(out[...,i],0), name, i)
         # features.sort(key=lambda tup: tup.descriptor, reverse=True)
         all_feature_locations.extend(feature_locations)
-        all_features.extend(features)
 
-    return all_feature_locations, all_features
+    return all_feature_locations
 
   def find_max_subpixels_in_feature_map(self, fmap, layer_name=None, channel=None):
     y_max = fmap.shape[0]
     x_max = fmap.shape[1]
 
     feature_locations = []
-    features = []
-    descriptor_type = DescriptorType.MAX
     max_points = []
     max_vals = []
     for q in range(1,y_max-1):
@@ -34,13 +30,15 @@ class FeatureDetectorMax(FeatureDetectorBase):
         if is_max:
           max_points.append((x,y))
           max_vals.append(max_val)
+          actual_pixel_value = fmap[q,p]
+          sub_pixel_value = max_val
+          pixel_value = PixelValue(actual_pixel_value=actual_pixel_value,
+                                   sub_pixel_value=sub_pixel_value)
           network_loc = NetworkLocation(layer_name, y, x, channel)
-          feature_loc = FeatureLocation(image_loc=None, network_loc=network_loc)
-          descriptor = Descriptor(data=max_val, descriptor_type=descriptor_type)
-
+          feature_loc = FeatureLocation(image_loc=None, network_loc=network_loc,
+                                        pixel_value=pixel_value)
           feature_locations.append(feature_loc)
-          features.append(Feature(location=feature_loc, descriptor=descriptor))
-    return feature_locations, features
+    return feature_locations
 
   def subpixel_max(self, fmap, q, p):
     '''
@@ -101,8 +99,8 @@ if __name__ == "__main__":
   image = np.random.rand(1,50,50,1)
   network_output = model.fcn_pass(image)
   fdm = FeatureDetectorMax()
-  feature_locations, features = fdm.detect(network_output)
-  data = [f.descriptor.data for f in features]
+  feature_locations = fdm.detect(network_output)
+  data = [f.pixel_value.sub_pixel_value for f in feature_locations]
   import matplotlib.pyplot as plt
 
   plt.hist(data, int(len(data)/10.))
@@ -118,7 +116,7 @@ if __name__ == "__main__":
   image = preprocess_input(image)
   network_output = model.fcn_pass(image)
   fdm = FeatureDetectorMax()
-  feature_locations, features = fdm.detect(network_output)
-  data = [f.descriptor.data for f in features]
+  feature_locations = fdm.detect(network_output)
+  data = [f.pixel_value.sub_pixel_value for f in feature_locations]
   plt.hist(data, int(len(data)/10.))
   plt.show()
