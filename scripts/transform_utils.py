@@ -3,7 +3,7 @@ import cv2
 from collections import Sequence
 from numbers import Number
 
-def transform_image(img, tf):
+def transform_image(img, tf, dsize=None):
   """
   Transform the image using the given transform
 
@@ -13,6 +13,8 @@ def transform_image(img, tf):
     Image to be transformed
   tf : np.ndarray or Sequence of Numbers
     2x3 or 3x3 affine transform matrix
+  dsize : tuple of int
+    Size of the output image
 
   Returns
   ------
@@ -24,9 +26,11 @@ def transform_image(img, tf):
   Uses warpAffine from cv2 (link to documentation below).
   https://docs.opencv.org/2.4/modules/imgproc/doc/geometric_transformations.html#warpaffine
   """
+  if dsize is None:
+    dsize=(img.shape[1], img.shape[0])
   tf = tf.flatten()[0:6].reshape(2,3).astype(np.float64)
   print('tf =\n{}'.format(tf))
-  return cv2.warpAffine(src=img, M=tf, dsize=(img.shape[1], img.shape[0]), flags=cv2.INTER_CUBIC)
+  return cv2.warpAffine(src=img, M=tf, dsize=dsize, flags=cv2.INTER_CUBIC)
 
 def transform_feature_locations(feature_locs, tf):
   """
