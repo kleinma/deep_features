@@ -78,9 +78,16 @@ class FeatureDetectorMax(FeatureDetectorBase):
                       is_max = True
                       x = (B*E - 2*C*D)/(4*A*C - B*B)
                       y = (B*D - 2*A*E)/(4*A*C - B*B)
-                      max_val = A*x*x + B*x*y + C*y*y + D*x + E*y + F
-                      x = x + p
-                      y = y + q
+                      # Check to see if local shape of surface is well behaved.
+                      # If so, the max point will be less than 1 pixel away.
+                      if abs(x) >= 1 or abs(y) >= 1:
+                        x = p
+                        y = q
+                        max_val = fmap[q,p]
+                      else:
+                        max_val = A*x*x + B*x*y + C*y*y + D*x + E*y + F
+                        x = x + p
+                        y = y + q
     return is_max, x, y, max_val
 
   def pixels_to_quad_coeffs(self, bmm, bsm, bpm, bms, bss, bps, bmp, bsp, bpp):
