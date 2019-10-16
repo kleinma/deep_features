@@ -113,13 +113,16 @@ class ModelBase():
     all_layer_names = [layer.name for layer in self.fcn.layers]
 
     fcn_input = self.fcn.input
+    input_height = fcn_input.shape[1]
     if desired_output_layers == None:
       # Use all the layers
       outputs = [layer.output for layer in self.fcn.layers]
       layer_names = [layer.name for layer in self.fcn.layers]
+      layer_scales = [layer.output.shape[1]/input_height for layer in self.fcn.layers]
     else:
       outputs = []
       layer_names = []
+      layer_scales = []
       for layer_ind_or_name in desired_output_layers:
         if isinstance(layer_ind_or_name, str):
           # layer represented by its name
@@ -139,6 +142,7 @@ class ModelBase():
         if 0 <= idx <= len(self.fcn.layers)-1:
           outputs.append(self.fcn.layers[idx].output)
           layer_names.append(self.fcn.layers[idx].name)
+          layer_scales.append(self.fcn.layers[idx].output.shape[1]/input_height)
         else:
           print('{} is out of range - MK'.format(idx))
 
@@ -147,6 +151,9 @@ class ModelBase():
     # Set data attributes
     self.output_functors = functors
     self.output_layer_names = layer_names
+    self.output_layer_scales = layer_scales
+    for name, scale in zip(layer_names, layer_scales):
+      print('name = {}, scale = {}'.format(name, scale))
 
   def fcn_pass(self, input_data):
     """
@@ -169,9 +176,11 @@ class ModelBase():
     input_data = self.preprocess_data(input_data)
     input_data = self.expand_to_bhwc(input_data)
     layer_outs = [func([input_data]) for func in self.output_functors]
-    network_output = [LayerOutput(layer_name=name, output_values=output[0])
-                      for name, output
-                      in zip(self.output_layer_names, layer_outs)]
+    network_output = [LayerOutput(layer_name=name, output_values=output[0],
+                                  layer_scale=scale)
+                      for name, output, scale
+                      in zip(self.output_layer_names, layer_outs,
+                             self.output_layer_scales)]
     return network_output
 
   def expand_to_bhwc(self, input_data):

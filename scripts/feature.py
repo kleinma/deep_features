@@ -38,7 +38,7 @@ list of feature locations and network output goes into feature descriptor - list
 # ImageLoc(ation) is the (x,y) location of the feature in image space
 ImageLocation = namedtuple('ImageLocation', ['x','y'])
 # NetworkLoc(ation) is the neuron in the network where the feature was found
-NetworkLocation = namedtuple('NetworkLocation', ['layer_name', 'height', 'width', 'channel'])
+NetworkLocation = namedtuple('NetworkLocation', ['layer_name', 'height', 'width', 'channel', 'layer_scale'])
 # PixelValue stores the value of the pixel as well as any subpixel value calculated
 PixelValue = namedtuple('PixelValue', ['actual_pixel_value', 'sub_pixel_value'])
 # FeatureLoc(cation) is the combined set of image and network locations

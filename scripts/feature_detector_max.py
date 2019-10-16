@@ -9,15 +9,15 @@ class FeatureDetectorMax(FeatureDetectorBase):
   '''
   def detect(self, network_output):
     all_feature_locations = []
-    for name, out in network_output:
+    for name, out, scale in network_output:
       for i in range(out.shape[-1]): #Iterate over the channels
-        feature_locations = self.find_max_subpixels_in_feature_map(np.squeeze(out[...,i],0), name, i)
+        feature_locations = self.find_max_subpixels_in_feature_map(np.squeeze(out[...,i],0), name, scale, i)
         # features.sort(key=lambda tup: tup.descriptor, reverse=True)
         all_feature_locations.extend(feature_locations)
 
     return all_feature_locations
 
-  def find_max_subpixels_in_feature_map(self, fmap, layer_name=None, channel=None):
+  def find_max_subpixels_in_feature_map(self, fmap, layer_name=None, layer_scale=1, channel=None):
     y_max = fmap.shape[0]
     x_max = fmap.shape[1]
 
@@ -34,7 +34,7 @@ class FeatureDetectorMax(FeatureDetectorBase):
           sub_pixel_value = max_val
           pixel_value = PixelValue(actual_pixel_value=actual_pixel_value,
                                    sub_pixel_value=sub_pixel_value)
-          network_loc = NetworkLocation(layer_name, y, x, channel)
+          network_loc = NetworkLocation(layer_name, y, x, channel, layer_scale)
           feature_loc = FeatureLocation(image_loc=None, network_loc=network_loc,
                                         pixel_value=pixel_value)
           feature_locations.append(feature_loc)

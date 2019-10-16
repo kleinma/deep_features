@@ -2,10 +2,26 @@ from affine_transform import AffineTransform
 import numpy as np
 from scipy import misc
 import matplotlib.pyplot as plt
-from transform_utils import transform_image, transform_feature_locations, is_affine_transform, transform_points
+from transform_utils import transform_image, transform_feature_locations, is_affine_transform, transform_points, make_full_frame_transformed_images
 from plotting_utils import get_feature_map_and_feature_locations, plot_feature_map_with_feature_locations, plot_two_feature_maps_with_feature_locations, plot_test_result
 import math
 
+orig_img = misc.face()
+tf_0 = AffineTransform()
+tf_0.add_identity()
+tf_0.add_rotation(np.pi/12.0)
+tf_0.add_translation(-100, 200)
+tf_0 = tf_0.as_ndarray()
+
+tf_1 = AffineTransform()
+tf_1.add_rotation(-np.pi/12.0)
+tf_1.add_translation(100, -200)
+tf_1.add_shear(.1, .2)
+tf_1 = tf_1.as_ndarray()
+
+make_full_frame_transformed_images(orig_img, tf_0, tf_1, plot=True)
+
+"""
 orig_img = misc.face()
 orig_img_height = orig_img.shape[0]
 orig_img_width = orig_img.shape[1]
@@ -78,8 +94,6 @@ plt.scatter(tf_box_1[0,:],tf_box_1[1,:])
 plt.scatter(full_box[0,:],full_box[1,:])
 
 orig_img_exp = 0*np.ones((math.ceil(full_box_max_y)-math.floor(full_box_min_y), math.ceil(full_box_max_x)-math.floor(full_box_min_x),3), dtype=tf_img_0.dtype)
-tf_img_0_exp = orig_img_exp.copy()
-tf_img_1_exp = orig_img_exp.copy()
 orig_img_exp_at_0 = orig_img_exp.copy()
 
 orig_img_exp_at_0[0:orig_img_height, 0:orig_img_width] = orig_img
@@ -118,3 +132,4 @@ plt.scatter(tf_box_1_exp[0,:],tf_box_1_exp[1,:])
 plt.scatter(full_box_exp[0,:],full_box_exp[1,:])
 plt.scatter(tf_box_0_exp_tf_1[0,:], tf_box_0_exp_tf_1[1,:],color='red', marker='x')
 plt.show()
+"""
