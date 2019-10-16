@@ -1,8 +1,10 @@
 from collections import namedtuple
 import numpy as np
-from transform_utils import transform_image, transform_feature_locations, is_affine_transform
-from plotting_utils import get_feature_map_and_feature_locations, plot_feature_map_with_feature_locations, plot_two_feature_maps_with_feature_locations, plot_test_result
+from feature import ImageLocation, NetworkLocation, PixelValue, FeatureLocation
+from transform_utils import transform_image, transform_feature_locations, is_affine_transform, make_full_frame_transformed_images, make_3x3_affine_tf
+from plotting_utils import get_feature_map_and_feature_locations, plot_feature_map_with_feature_locations, plot_two_feature_maps_with_feature_locations, plot_test_result, plot_matches_in_layer
 from test_result import TestResult
+import polygon
 
 class TestDetectorAffine():
   """
@@ -48,17 +50,18 @@ class TestDetectorAffine():
     """
     # Convert the transforms into 2x3 matrices
     if is_affine_transform(tf_0):
-      tf_0 = np.array(tf_0).flatten()[0:6].reshape((2,3))
+      tf_0 = make_3x3_affine_tf(tf_0)
     # If only one transform is sent, make the first transform the identity matrix
     transform_img_0 = True
     if tf_1 is None:
       transform_img_0 = False
       tf_1 = np.copy(tf_0)
-      tf_0 = np.array([1, 0, 0, 0, 1, 0]).reshape((2,3))
+      tf_0 = np.identity(3,dtype=np.dtype('float'))
     elif is_affine_transform(tf_1):
-      tf_1 = np.array(tf_1).flatten()[0:6].reshape((2,3))
+      tf_1 = make_3x3_affine_tf(tf_1)
 
     # Apply transforms to self.orig_img
+    orig_img_exp, tf_img_0_exp, tf_img_1_exp, orig_box_exp, tf_box_0_exp, tf_box_1_exp, offset_tf = make_full_frame_transformed_images(self.orig_img, tf_0, tf_1, plot=False)
     if transform_img_0: # Don't transform if using the original img
       img_0 = transform_image(self.orig_img, tf_0)
     else:
@@ -66,18 +69,95 @@ class TestDetectorAffine():
     img_1 = transform_image(self.orig_img, tf_1)
 
     # Find feature locations in both images
-    feat_locs_0, net_out_0 = self.find_features(img_0)
-    feat_locs_1, net_out_1 = self.find_features(img_1)
+    feat_locs_0, net_out_0 = self.find_features(tf_img_0_exp)
+    feat_locs_1, net_out_1 = self.find_features(tf_img_1_exp)
+
+    # Filter out feature locations outside the boxes
+    feat_locs_0 = self.is_inside_box(feat_locs_0, tf_box_0_exp)
+    feat_locs_1 = self.is_inside_box(feat_locs_1, tf_box_1_exp)
+
+    # Add box corners to feature locations for testing
+    # self.add_box_corners_to_feature_locations(feat_locs_0, tf_box_0_exp)
+    # self.add_box_corners_to_feature_locations(feat_locs_1, tf_box_1_exp)
 
     # Apply transform to features from image 0 and compare to those from image 1
-    feat_locs_0_transformed = transform_feature_locations(feat_locs_0, tf_1)
+    tf0_2_tf1 = np.matmul(offset_tf, tf_1) @ np.linalg.inv(np.matmul(offset_tf, tf_0))
+    feat_locs_0_transformed = transform_feature_locations(feat_locs_0, tf0_2_tf1)
 
     # Calculate repeatability
     repeatability = self.compare_feature_locations(feat_locs_0_transformed,
-                                                   feat_locs_1)
+                                                   feat_locs_1) #,
+                                                   # tf_box_0_exp, tf_box_1_exp,
+                                                   # offset_tf)
 
     # Add score to self.test_results
-    self.test_results.append(TestResult(self.orig_img, tf_0, tf_1, img_0, img_1, net_out_0, net_out_1, feat_locs_0, feat_locs_1, repeatability))
+    self.test_results.append(TestResult(self.orig_img, tf_0, tf_1, offset_tf, tf_img_0_exp, tf_img_1_exp, net_out_0, net_out_1, feat_locs_0, feat_locs_1, repeatability))
+
+  def is_inside_box(self, feat_locs, box):
+    """
+    Filter out feature locations that are outside the box.
+
+    Parameters
+    ----------
+    feat_locs : List[FeatureLocation]
+      List of feature locations
+    box : np.ndarray
+      A 2xN containing the vertices of a polygon
+
+    Returns
+    -------
+    List[FeatureLocation]
+      The feature locations that are inside the box
+    """
+    filtered_feat_locs = []
+
+    for f in feat_locs:
+      scale = f.network_loc.layer_scale
+      scaled_box = scale*box
+      point = np.array((f.network_loc.width, f.network_loc.height))
+
+      if polygon.is_inside(scaled_box, point):
+        filtered_feat_locs.append(f)
+
+    return filtered_feat_locs
+
+  def add_box_corners_to_feature_locations(self, feat_locs, box):
+    """
+    Add the corners of each trasnformed image as points in each layer/channel
+
+    This is function is used to add the corners of a transformed image to the
+    features for debugging purposes. That way, when we look at the features of
+    two images that have been transformed, we can visually test to see if they
+    line up correctly once aligned, as the corners should overlap.
+
+    Parameters
+    ----------
+    feat_locs : List[FeatureLocation]
+      List of the feature locations found in the image
+    box : np.ndarray
+      A 2xN numpy array with x,y positions of each corner of the box (polygon)
+
+    Returns
+    -------
+    List[FeatureLocation]
+      The original list with the corners appended for each layer and channel
+    """
+    seen = set()
+    layer_names_and_scales = [(f.network_loc.layer_name, f.network_loc.layer_scale) for f in feat_locs if not (f.network_loc.layer_name in seen or seen.add(f.network_loc.layer_name))]
+
+    layer_names_and_scales_and_channels = []
+    for name, scale in layer_names_and_scales:
+      seen = set()
+      channels = [f.network_loc.channel for f in feat_locs if f.network_loc.layer_name == name and not (f.network_loc.channel in seen or seen.add(f.network_loc.channel))]
+      layer_names_and_scales_and_channels.append((name,scale,channels))
+
+    for name, scale, channels in layer_names_and_scales_and_channels:
+      for channel in channels:
+        for x, y in box.T:
+          net_loc = NetworkLocation(name, y*scale, x*scale, channel, scale)
+          pixel_value = PixelValue(-1, -1)
+          feat_loc = FeatureLocation(ImageLocation(0,0), net_loc, pixel_value)
+          feat_locs.append(feat_loc)
 
   def find_features(self, img):
     """
@@ -156,16 +236,20 @@ if __name__ == "__main__":
 
   tf_0 = AffineTransform()
   tf_0.add_identity()
+  tf_0.add_rotation(np.pi/2.0)
+  tf_0.add_translation(-100, 200)
   tf_0 = tf_0.as_ndarray()
-  test.run_test(tf_0=tf_0)
+  # test.run_test(tf_0=tf_0)
 
-  tf_1 = [1, 0, 10, 0, 0, 10]
   tf_1 = AffineTransform()
-  tf_1.add_rotation(np.pi/12.0)
+  tf_1.add_rotation(-np.pi/12.0)
+  tf_1.add_translation(100, -200)
+  tf_1.add_shear(.1, .2)
   tf_1 = tf_1.as_ndarray()
   test.run_test(tf_0=tf_0, tf_1=tf_1)
 
   for i in range(0,10):
     # test.plot_test_result(1, 'block5_conv3', i)
-    plot_test_result(test.test_results[1], 'block5_conv3', i)
-    # test.plot_test_result(1, 'block5_conv3', i)
+    plot_test_result(test.test_results[0], 0, i)
+
+  plot_matches_in_layer(test.test_results[0], 0)
