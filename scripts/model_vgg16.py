@@ -1,15 +1,70 @@
 import tensorflow as tf
 from tensorflow.keras.applications.vgg16 import VGG16, preprocess_input
+from tensorflow.keras.models import Model
+from tensorflow.keras.layers import Conv2D
 from model_base import ModelBase
 
 class ModelVGG16(ModelBase):
   """ The VGG16 network model """
   def build_fully_convolutional_network(self):
-    return VGG16()
+    # Start with the model with fully connected (dense) layers
+    model_dense = VGG16()
+
+    # Get the input
+    inp = model_dense.input
+    # Get the output of the last layer before flattening (block5_pool)
+    mid = model_dense.layers[18].output
+
+    # Get the weights and activations of the three fully connected layers
+    filters_fc1, biases_fc1 = model_dense.layers[20].get_weights()
+    filters_fc2, biases_fc2 = model_dense.layers[21].get_weights()
+    filters_pred, biases_pred = model_dense.layers[22].get_weights()
+
+    act_fc1 = model_dense.layers[20].activation
+    act_fc2 = model_dense.layers[21].activation
+    act_pred = model_dense.layers[22].activation
+
+    # Create the new convolutional layers
+    # Note: Don't add the flatten layer at the top. That is done in the
+    # build_classifier_network() function in ModelBase. We want to leave this
+    # portion of the network fully convolutional.
+    conv1 = Conv2D(4096, 7, activation=act_fc1, name='fc1')
+    conv2 = Conv2D(4096, 1, activation=act_fc2, name='fc2')
+    conv3 = Conv2D(1000, 1, activation=act_pred, name='predictions')
+    # (See note above) flatten = Flatten(name='flatten')
+
+    # Add these new layers on top of the block5_pool layer
+    # (See note above) out = flatten(conv3(conv2(conv1(mid))))
+    out = conv3(conv2(conv1(mid)))
+
+    # And create the new model
+    model_fcn = Model(inp, out)
+
+    # Now, replace the convolutional layer weights with the fully connected
+    # weights. First, get the filters from the conv layers so we can get the
+    # shape to easily reshape the fc weights.
+    filters_conv1, _ = conv1.get_weights()
+    filters_conv2, _ = conv2.get_weights()
+    filters_conv3, _ = conv3.get_weights()
+
+    # Now set the weights, reshaping the fc weights
+    conv1.set_weights([tf.reshape(filters_fc1, filters_conv1.shape).numpy(), biases_fc1])
+    conv2.set_weights([tf.reshape(filters_fc2, filters_conv2.shape).numpy(), biases_fc2])
+    conv3.set_weights([tf.reshape(filters_pred, filters_conv3.shape).numpy(), biases_pred])
+
+    return model_fcn
 
   def init_desired_output_layers(self):
     """ Grab the last convolutional layer from each block """
-    return ['block5_conv3']
+    """
+    return ['input_1',
+            'block1_conv1', 'block1_conv2', 'block1_pool',
+            'block2_conv1', 'block2_conv2', 'block2_pool',
+            'block3_conv1', 'block3_conv2', 'block3_conv3', 'block3_pool',
+            'block4_conv1', 'block4_conv2', 'block4_conv3', 'block4_pool',
+            'block5_conv1', 'block5_conv2', 'block5_conv3', 'block5_pool']
+    """
+    return ['block5_pool','fc1','fc2','predictions']
 
   def init_checkpoint_dir(self):
     return './checkpoints/vgg16'
