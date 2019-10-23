@@ -38,7 +38,7 @@ class ModelVGG16(ModelBase):
     out = conv3(conv2(conv1(mid)))
 
     # And create the new model
-    model_fcn = Model(inp, out)
+    model_fcn = Model(inp, out, name='fcn')
 
     # Now, replace the convolutional layer weights with the fully connected
     # weights. First, get the filters from the conv layers so we can get the
