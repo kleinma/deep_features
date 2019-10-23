@@ -100,6 +100,10 @@ class FeatureDetectorMax(FeatureDetectorBase):
     return A, B, C, D, E, F
 
 if __name__ == "__main__":
+  import matplotlib.pyplot as plt
+  from scipy import misc
+
+  """
   # Try with mnist model
   from model_mnist import ModelMnist
   model = ModelMnist()
@@ -108,10 +112,10 @@ if __name__ == "__main__":
   fdm = FeatureDetectorMax()
   feature_locations = fdm.detect(network_output)
   data = [f.pixel_value.sub_pixel_value for f in feature_locations]
-  import matplotlib.pyplot as plt
 
   plt.hist(data, int(len(data)/10.))
   plt.show()
+  """
 
   # Try with vgg16 model
   from model_vgg16 import ModelVGG16
@@ -121,9 +125,15 @@ if __name__ == "__main__":
   image = np.random.randint(0,256,(224,224,3))
   image = np.expand_dims(image, axis=0)
   image = preprocess_input(image)
+  image = misc.face()
   network_output = model.fcn_pass(image)
   fdm = FeatureDetectorMax()
   feature_locations = fdm.detect(network_output)
   data = [f.pixel_value.sub_pixel_value for f in feature_locations]
   plt.hist(data, int(len(data)/10.))
   plt.show()
+
+  from plotting_utils import plot_layer_output_and_feature_locations
+
+  for layer_output in network_output:
+    plot_layer_output_and_feature_locations(layer_output, feature_locations, 20, 39)

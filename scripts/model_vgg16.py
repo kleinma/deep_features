@@ -91,22 +91,23 @@ class ModelVGG16(ModelBase):
 
 
 if __name__ == "__main__":
+  import matplotlib.pyplot as plt
+  from scipy import misc
+
   model = ModelVGG16()
   model.fcn.summary()
   model.classifier.summary()
 
   import numpy as np
-  image = np.random.rand(448,224,3)
+  image = np.random.rand(1024,768,3)
   network_output = model.fcn_pass(image)
 
   for name, output, _ in network_output:
     print('layer_name = {}, output_value\'s shape = {} '.format(name, output.shape))
 
-  from scipy import misc
   img = misc.face()
   network_output = model.fcn_pass(img)
 
-  import matplotlib.pyplot as plt
 
   for name, output, scale in network_output:
     num_channels = output.shape[-1]
@@ -116,3 +117,34 @@ if __name__ == "__main__":
       # plt.title(name + ", channel = {}".format(channel))
       # plt.show()
       print('name = {}, channel = {}, max = {}'.format(name, channel, np.max(output[:,:,:,channel])))
+
+  # Now check to make sure the output of both networks run on imagenet2012
+  # validation data have the same result
+  import tensorflow_datasets as tfds
+  data = tfds.load("imagenet2012", data_dir='data')
+  data_val = data['validation']
+
+  tot_right = 0
+  tot = 0
+  for ex in data_val.take(1000):
+    image = ex['image']
+    label = ex['label']
+
+    image = tf.image.resize(image,(224,224))
+    image_proc = model.expand_to_bhwc(model.preprocess_data(image))
+
+    tot = tot + 1
+    # print('{} = {} ?'.format(tf.math.argmax(model.classifier(image_proc),1).numpy()[0], label.numpy()))
+    if tf.math.argmax(model.classifier(image_proc),1).numpy()[0] == label.numpy():
+      tot_right = tot_right + 1
+
+  print('percentage right = {}%'.format(100*tot_right/tot))
+
+  # Just look at some of the feature maps
+  from plotting_utils import plot_layer_output
+
+  img = misc.face()
+  network_output = model.fcn_pass(img)
+
+  for layer_output in network_output:
+    plot_layer_output(layer_output, 20, 39)

@@ -279,3 +279,127 @@ def get_feature_min_distances(feat_locs_0, feat_locs_1):
       matches_1.append(FeatureLocationMatch(loc_1, closest_match, min_dist, (1./scale)*min_dist))
 
   return (matches_0, matches_1)
+
+def plot_layer_output(layer_output, channel_min=0, channel_max=-1, grid_height = 5, grid_width = 4):
+  """
+  Plot channels of a layer output.
+
+  Parameters
+  ----------
+  layer_output : LayerOutput
+    Layer output to be plotted.
+  channel_min, channel_max : int
+    Min and max channels to be plotted.
+  grid_height, grid_width : int
+    Dimensions of the subplot grid.
+
+  Raises
+  ------
+  ValueError
+    If channel_min or channel_max are out of range.
+  """
+  name, output, scale = layer_output
+  num_channels = output.shape[-1]
+
+  if channel_min < 0:
+    raise ValueError('channel_min must be 0 or greater')
+  if channel_min >= num_channels:
+    raise ValueError('channel_min must be less than the number of channels')
+  if channel_max >= num_channels:
+    raise ValueError('channel_max must be less than the number of channels')
+  if channel_max < channel_min:
+    raise ValueError('channel_max must be greater than or equal to channel_min')
+  if channel_max < 0:
+    channel_max = channel_min # Just look at channel_min
+
+  output = np.squeeze(output, 0)
+  num_channels_per_set = grid_height * grid_width
+  channels = list(range(channel_min, channel_max+1))
+
+  # Split channels up into sets that will be plotted at once
+  channel_sets = [channels[x:x+num_channels_per_set]
+                  for x in range(0, len(channels), num_channels_per_set)]
+
+  print(channel_sets)
+
+  for channel_set in channel_sets:
+    ix = 0
+    jx = 0
+    fig, axs = plt.subplots(grid_height, grid_width, constrained_layout=True)
+    fig.suptitle('layer name = {}'.format(name))
+    print(len(axs))
+    print(len(axs[0]))
+    for channel in channel_set:
+      print('ix = {}, jx = {}'.format(ix,jx))
+      fmap = output[:,:,channel]
+      axs[jx,ix].imshow(fmap, cmap='gray')
+      axs[jx,ix].set_title('channel = {}'.format(channel))
+      axs[jx,ix].set_xticks([])
+      axs[jx,ix].set_yticks([])
+      ix += 1
+      if ix >= grid_width:
+        ix = 0
+        jx += 1
+    plt.show()
+
+def plot_layer_output_and_feature_locations(layer_output, feature_locations, channel_min=0, channel_max=-1, grid_height = 5, grid_width = 4):
+  """
+  Plot channels of a layer output.
+
+  Parameters
+  ----------
+  layer_output : LayerOutput
+    Layer output to be plotted.
+  feature_locations : List[FeatureLocation]
+    Feature locations to be plotted.
+  channel_min, channel_max : int
+    Min and max channels to be plotted.
+  grid_height, grid_width : int
+    Dimensions of the subplot grid.
+
+  Raises
+  ------
+  ValueError
+    If channel_min or channel_max are out of range.
+  """
+  name, output, scale = layer_output
+  num_channels = output.shape[-1]
+
+  if channel_min < 0:
+    raise ValueError('channel_min must be 0 or greater')
+  if channel_min >= num_channels:
+    raise ValueError('channel_min must be less than the number of channels')
+  if channel_max >= num_channels:
+    raise ValueError('channel_max must be less than the number of channels')
+  if channel_max < channel_min:
+    raise ValueError('channel_max must be greater than or equal to channel_min')
+  if channel_max < 0:
+    channel_max = channel_min # Just look at channel_min
+
+  output = np.squeeze(output, 0)
+  num_channels_per_set = grid_height * grid_width
+  channels = list(range(channel_min, channel_max+1))
+
+  # Split channels up into sets that will be plotted at once
+  channel_sets = [channels[x:x+num_channels_per_set]
+                  for x in range(0, len(channels), num_channels_per_set)]
+
+  for channel_set in channel_sets:
+    ix = 0
+    jx = 0
+    fig, axs = plt.subplots(grid_height, grid_width, constrained_layout=True)
+    for channel in channel_set:
+      trimmed_feature_locations = [feature_location for feature_location in feature_locations if feature_location.network_loc.layer_name == name and feature_location.network_loc.channel == channel]
+      flocs_x = [floc.network_loc.width for floc in trimmed_feature_locations]
+      flocs_y = [floc.network_loc.height for floc in trimmed_feature_locations]
+      fmap = output[:,:,channel]
+      axs[jx,ix].imshow(fmap, cmap='gray')
+      axs[jx,ix].scatter(flocs_x, flocs_y, marker='x', s = 20, color='tab:red')
+      axs[jx,ix].set_title('channel = {}'.format(channel))
+      axs[jx,ix].set_xticks([])
+      axs[jx,ix].set_yticks([])
+      ix += 1
+      if ix >= grid_width:
+        ix = 0
+        jx += 1
+    plt.show()
