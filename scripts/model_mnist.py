@@ -26,5 +26,5 @@ if __name__ == "__main__":
   image = np.random.rand(1,50,50,1)
   network_output = model.fcn_pass(image)
 
-  for name, output in network_output:
+  for name, output, _ in network_output:
     print('layer_name = {}, output_value\'s shape = {} '.format(name, output.shape))
