@@ -103,7 +103,6 @@ if __name__ == "__main__":
   import matplotlib.pyplot as plt
   from scipy import misc
 
-  """
   # Try with mnist model
   from model_mnist import ModelMnist
   model = ModelMnist()
@@ -115,7 +114,6 @@ if __name__ == "__main__":
 
   plt.hist(data, int(len(data)/10.))
   plt.show()
-  """
 
   # Try with vgg16 model
   from model_vgg16 import ModelVGG16

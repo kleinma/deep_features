@@ -6,7 +6,7 @@ class ModelMnist(ModelBase):
   ''' Define a small network to classify MNIST digits '''
   def build_fully_convolutional_network(self):
     return tf.keras.Sequential([Conv2D(32, 3, activation='relu',
-                                       input_shape=(None,None,1),
+                                       input_shape=(28,28,1),
                                        name='conv2d_0'),
                                 Conv2D(128, 28-2, activation='relu',
                                        name='conv2d_1'),
